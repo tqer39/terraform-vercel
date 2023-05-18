@@ -26,12 +26,15 @@
     "controltower",
     "datasources",
     "dearmor",
+    "deploy_pipeline",
     "dpkg",
     "drawio",
     "envsubst",
     "esac",
     "fqdns",
     "fuga",
+    "getline",
+    "github",
     "hashi",
     "hashicor",
     "hashicorp",
@@ -81,6 +84,7 @@
     "usecases",
     "vercel",
     "Vercel",
-    "VERCEL"
+    "VERCEL",
+    "workflows"
   ]
 }
