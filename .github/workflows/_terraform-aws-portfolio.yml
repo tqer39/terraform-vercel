@@ -1,0 +1,137 @@
+---
+name: Terraform - AWS - Portfolio
+
+on:
+  pull_request:
+    paths:
+      - ".github/actions/**/action.yml"
+      - ".github/workflows/_terraform-aws-portfolio.yml"
+      - ".tool-versions"
+      - "terraform/src/**"
+      - "terraform/modules/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/actions/**/action.yml"
+      - ".github/workflows/_terraform-aws-portfolio.yml"
+      - ".tool-versions"
+      - "terraform/src/**"
+      - "terraform/modules/**"
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+  id-token: write
+  pull-requests: write
+
+concurrency: terraform-aws-portfolio
+
+env:
+  AWS_ACCOUNT_ID: "072693953877"
+  AWS_ENV_NAME: portfolio
+  OIDC_IAM_ROLE: portfolio-terraform-aws-deploy
+
+jobs:
+  set-matrix:
+    name: Set Matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Set Matrix
+        id: set-matrix
+        uses: ./.github/actions/set-matrix
+        with:
+          AWS_ENV_NAME: ${{ env.AWS_ENV_NAME }}
+
+  terraform:
+    name: Terraform
+    needs: [set-matrix]
+    if: needs.set-matrix.outputs.matrix != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: ${{ fromJson(needs.set-matrix.outputs.matrix )}}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: AWS Credential
+        uses: ./.github/actions/aws-credential
+        with:
+          oidc-iam-role: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.OIDC_IAM_ROLE }}
+
+      - name: Terraform Plan
+        uses: ./.github/actions/terraform-plan
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          working-directory: ./terraform/src/${{ env.AWS_ENV_NAME }}/${{ matrix.directory }}
+
+      - name: Start Deployment
+        if: env.TF_PLAN_STATUS == 'has-diff' && github.ref == 'refs/heads/main'
+        uses: bobheadxi/deployments@v1
+        id: deployment
+        with:
+          step: start
+          token: ${{ secrets.GITHUB_TOKEN }}
+          env: ${{ env.AWS_ENV_NAME }}
+
+      - name: Terraform Apply
+        if: env.TF_PLAN_STATUS == 'has-diff' && contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
+        uses: ./.github/actions/terraform-apply
+        with:
+          working-directory: ./terraform/src/${{ env.AWS_ENV_NAME }}/${{ matrix.directory }}
+
+      - name: Finish Deployment
+        if: env.TF_PLAN_STATUS == 'has-diff' && always() && github.ref == 'refs/heads/main'
+        uses: bobheadxi/deployments@v1
+        with:
+          step: finish
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
+          env: ${{ steps.deployment.outputs.env }}
+          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+
+  hide_comments:
+    name: Hide Comments
+    needs: [terraform]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: contains(fromJSON('["pull_request"]'), github.event_name)
+    steps:
+      - name: Check and hide comments
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SEARCH_PHRASE: "No changes"
+        run: |
+          echo "GITHUB_REF: $GITHUB_REF"
+          pr_number=$(echo "$GITHUB_REF" | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          comments_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments"
+
+          # Fetch comments
+          comments=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "${comments_url}")
+          # echo "Comments: ${comments}"
+
+          # Loop through comments and hide comments with the search phrase
+          while IFS= read -r comment; do
+            comment_id=$(echo "${comment}" | jq -r '.id')
+            echo "Comment ID: ${comment_id}"
+            comment_body=$(echo "${comment}" | jq -r '.body')
+            echo "Comment Body: ${comment_body}"
+
+            if [[ "${comment_body}" =~ $SEARCH_PHRASE ]]; then
+              hide_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}/minimize"
+              curl -s -X PUT -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" -d '{"classifier": "outdated"}' "${hide_url}"
+              echo "Hide comment with ID: ${comment_id}"
+            fi
+          done < <(echo "${comments}" | jq -rc '.[]')
