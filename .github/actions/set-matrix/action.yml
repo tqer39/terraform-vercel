@@ -26,7 +26,7 @@ runs:
 
         for pipeline in "${deploy_pipelines[@]}"; do
           if ! ./.github/scripts/check-for-changes-in-terraform-files.sh \
-            "terraform/environments/${{ env.AWS_ENV_NAME }}/${pipeline}" \
+            "terraform/src/${{ env.AWS_ENV_NAME }}/${pipeline}" \
             "${{ github.base_ref }}" \
             "${{ github.head_ref }}" ; then
             echo "No changes in $pipeline"

@@ -4,9 +4,6 @@ name: Terraform Plan
 description: Terraform Plan
 
 inputs:
-  env_name:
-    description: 環境名（dev, stg, prod）
-    required: true
   github-token:
     description: サードパーティの Action を実行するための権限を付与するための認証用トークン
     required: true
@@ -51,7 +48,7 @@ runs:
           *) TF_PLAN_STATUS="unknown-error" ;;
         esac
 
-        TARGET=$(echo ${{ inputs.working-directory }} | sed -e 's|^.*terraform/environments/||' | cut -c 1-36)
+        TARGET=$(echo ${{ inputs.working-directory }} | sed -e 's|^.*terraform/src/||' | cut -c 1-36)
         tfcmt --var target:$TARGET plan -patch -- cat tf_plan.txt
 
         echo "TF_PLAN_STATUS=$TF_PLAN_STATUS"
