@@ -7,11 +7,11 @@ inputs:
   github-token:
     description: サードパーティの Action を実行するための権限を付与するための認証用トークン
     required: true
+  SLACK_WEBHOOK:
+    description: Slack の Webhook URL
+    required: true
   working-directory:
     description: Terraform CLI 実行時のパス
-    required: true
-  SLACK_WEBHOOK_URL:
-    description: Slack の Webhook URL
     required: true
 
 runs:
@@ -60,7 +60,7 @@ runs:
       shell: bash
 
     - name: Set Slack Message (Terraform Plan failure)
-      if: env.TF_PLAN_STATUS == 'has-diff'
+      if: env.TF_PLAN_STATUS == 'has-diff' && inputs.CHECK_DIFF == '_true'
       run: echo "ERROR_MSG=インフラのコードと実態のリソースに差分があります" >> "$GITHUB_ENV"
       shell: bash
 
@@ -69,9 +69,16 @@ runs:
       run: echo "ERROR_MSG=difference check CIがエラー終了しました" >> "$GITHUB_ENV"
       shell: bash
 
+    # - name: DEBUG
+    #   run: |
+    #     echo "exitcode: ${{ steps.terraform-plan.outputs.exitcode }}"
+    #     echo "TF_PLAN_STATUS: ${{ env.TF_PLAN_STATUS }}"
+    #     echo "CHECK_DIFF: ${{ inputs.CHECK_DIFF }}"
+    #   shell: bash
+
     - name: Slack Notification (failure)
       continue-on-error: true
-      if: steps.terraform-plan.outputs.exitcode == '1'
+      if: steps.terraform-plan.outputs.exitcode == '1' || (env.TF_PLAN_STATUS == 'has-diff' && inputs.CHECK_DIFF == '_true')
       uses: rtCamp/action-slack-notify@v2
       env:
         SLACK_CHANNEL: "#ntf_gh_private-lab"

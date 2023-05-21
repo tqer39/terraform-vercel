@@ -32,7 +32,7 @@ concurrency: terraform-aws-portfolio
 env:
   AWS_ACCOUNT_ID: "072693953877"
   AWS_ENV_NAME: portfolio
-  OIDC_IAM_ROLE: portfolio-terraform-aws-deploy
+  OIDC_IAM_ROLE: portfolio-terraform-vercel-deploy
 
 jobs:
   set-matrix:
@@ -54,7 +54,7 @@ jobs:
   terraform:
     name: Terraform
     needs: [set-matrix]
-    if: needs.set-matrix.outputs.matrix != ''
+    if: ${{ needs.set-matrix.outputs.matrix != '["_empty"]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -74,8 +74,8 @@ jobs:
         uses: ./.github/actions/terraform-plan
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          working-directory: ./terraform/src/${{ env.AWS_ENV_NAME }}/${{ matrix.directory }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          working-directory: ./terraform/src/${{ matrix.directory }}
 
       - name: Start Deployment
         if: env.TF_PLAN_STATUS == 'has-diff' && github.ref == 'refs/heads/main'
@@ -90,7 +90,7 @@ jobs:
         if: env.TF_PLAN_STATUS == 'has-diff' && contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
         uses: ./.github/actions/terraform-apply
         with:
-          working-directory: ./terraform/src/${{ env.AWS_ENV_NAME }}/${{ matrix.directory }}
+          working-directory: ./terraform/src/${{ matrix.directory }}
 
       - name: Finish Deployment
         if: env.TF_PLAN_STATUS == 'has-diff' && always() && github.ref == 'refs/heads/main'
@@ -102,36 +102,22 @@ jobs:
           env: ${{ steps.deployment.outputs.env }}
           deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
-  hide_comments:
-    name: Hide Comments
+  delete_pr_comments:
+    name: Delete PR Comments
     needs: [terraform]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: contains(fromJSON('["pull_request"]'), github.event_name)
     steps:
-      - name: Check and hide comments
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SEARCH_PHRASE: "No changes"
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Check and delete comments
         run: |
-          echo "GITHUB_REF: $GITHUB_REF"
-          pr_number=$(echo "$GITHUB_REF" | awk 'BEGIN { FS = "/" } ; { print $3 }')
-          comments_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments"
-
-          # Fetch comments
-          comments=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "${comments_url}")
-          # echo "Comments: ${comments}"
-
-          # Loop through comments and hide comments with the search phrase
-          while IFS= read -r comment; do
-            comment_id=$(echo "${comment}" | jq -r '.id')
-            echo "Comment ID: ${comment_id}"
-            comment_body=$(echo "${comment}" | jq -r '.body')
-            echo "Comment Body: ${comment_body}"
-
-            if [[ "${comment_body}" =~ $SEARCH_PHRASE ]]; then
-              hide_url="https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}/minimize"
-              curl -s -X PUT -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" -d '{"classifier": "outdated"}' "${hide_url}"
-              echo "Hide comment with ID: ${comment_id}"
-            fi
-          done < <(echo "${comments}" | jq -rc '.[]')
+          chmod +x ./.github/scripts/delete_pr_comments.sh
+          ./.github/scripts/delete_pr_comments.sh \
+            "tqer39" \
+            "terraform-vercel" \
+            "${{ env.AWS_ENV_NAME }}" \
+            "${{ github.event.pull_request.number }}" \
+            "${{ secrets.GITHUB_TOKEN }}"
