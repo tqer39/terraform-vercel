@@ -3,19 +3,19 @@
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_vercel"></a> [vercel](#requirement\_vercel) | 0.13.0 |
+| <a name="requirement_vercel"></a> [vercel](#requirement\_vercel) | 0.13.1 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_vercel"></a> [vercel](#provider\_vercel) | 0.13.0 |
+| <a name="provider_vercel"></a> [vercel](#provider\_vercel) | 0.13.1 |
 
 ## Resources
 
 | Name | Type |
 |------|------|
-| [vercel_project.this](https://registry.terraform.io/providers/vercel/vercel/0.13.0/docs/resources/project) | resource |
+| [vercel_project.this](https://registry.terraform.io/providers/vercel/vercel/0.13.1/docs/resources/project) | resource |
 
 ## Inputs
 
