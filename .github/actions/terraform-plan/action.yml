@@ -4,6 +4,10 @@ name: Terraform Plan
 description: Terraform Plan
 
 inputs:
+  CHECK_DIFF:
+    description: 差分チェックを行うかどうか
+    required: true
+    default: "_false"
   github-token:
     description: サードパーティの Action を実行するための権限を付与するための認証用トークン
     required: true
