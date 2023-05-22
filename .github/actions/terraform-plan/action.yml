@@ -14,11 +14,11 @@ inputs:
   SLACK_WEBHOOK:
     description: Slack の Webhook URL
     required: true
-  working-directory:
-    description: Terraform CLI 実行時のパス
-    required: true
   VERCEL_API_TOKEN:
     description: Vercel の API トークン
+    required: true
+  working-directory:
+    description: Terraform CLI 実行時のパス
     required: true
 
 runs:
