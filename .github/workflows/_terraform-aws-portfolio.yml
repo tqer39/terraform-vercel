@@ -93,8 +93,8 @@ jobs:
           CHECK_DIFF: ${{ env.CHECK_DIFF }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          working-directory: ./terraform/src/${{ matrix.directory }}
           VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
+          working-directory: ./terraform/src/${{ matrix.directory }}
 
       - name: Start Deployment
         if: env.TF_PLAN_STATUS == 'has-diff' && github.ref == 'refs/heads/main'
