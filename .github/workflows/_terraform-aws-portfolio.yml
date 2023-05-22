@@ -109,6 +109,7 @@ jobs:
         if: env.TF_PLAN_STATUS == 'has-diff' && contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
         uses: ./.github/actions/terraform-apply
         with:
+          VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
           working-directory: ./terraform/src/${{ matrix.directory }}
 
       - name: Finish Deployment
