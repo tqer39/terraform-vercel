@@ -19,7 +19,21 @@ on:
       - "terraform/src/**"
       - "terraform/modules/**"
   workflow_call:
+    inputs:
+      CHECK_DIFF:
+        description: "差分チェックフラグ"
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      CHECK_DIFF:
+        description: "差分チェックフラグ"
+        required: true
+        type: choice
+        default: "_true"
+        options:
+          - "_true"
+          - "_false"
 
 permissions:
   contents: read
@@ -27,12 +41,15 @@ permissions:
   id-token: write
   pull-requests: write
 
-concurrency: terraform-aws-portfolio
+concurrency:
+  group: terraform-aws-portfolio
+  cancel-in-progress: true
 
 env:
   AWS_ACCOUNT_ID: "072693953877"
   AWS_ENV_NAME: portfolio
   OIDC_IAM_ROLE: portfolio-terraform-vercel-deploy
+  CHECK_DIFF: ${{ inputs.CHECK_DIFF || github.event.inputs.CHECK_DIFF || '_false' }}
 
 jobs:
   set-matrix:
@@ -73,9 +90,11 @@ jobs:
       - name: Terraform Plan
         uses: ./.github/actions/terraform-plan
         with:
+          CHECK_DIFF: ${{ env.CHECK_DIFF }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           working-directory: ./terraform/src/${{ matrix.directory }}
+          VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
 
       - name: Start Deployment
         if: env.TF_PLAN_STATUS == 'has-diff' && github.ref == 'refs/heads/main'
