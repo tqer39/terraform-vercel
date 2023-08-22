@@ -1,5 +1,5 @@
 terraform {
-  required_version = "1.4.6"
+  required_version = "1.5.5"
   required_providers {
     # MEMO: hashicor/aws を上にすると hashicorp/vercel を参照してしまうため注意
     aws = {
