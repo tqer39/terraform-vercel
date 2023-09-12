@@ -4,7 +4,7 @@ terraform {
     # MEMO: hashicor/aws を上にすると hashicorp/vercel を参照してしまうため注意
     aws = {
       source  = "hashicorp/aws"
-      version = "5.16.0"
+      version = "5.16.2"
     }
     vercel = {
       source  = "vercel/vercel"
