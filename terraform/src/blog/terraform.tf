@@ -8,7 +8,7 @@ terraform {
     }
     vercel = {
       source  = "vercel/vercel"
-      version = "0.13.0"
+      version = "0.15.2"
     }
   }
   backend "s3" {
