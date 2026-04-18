@@ -36,12 +36,12 @@ jobs:
 
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Render terraform docs and push changes back to PR
-        uses: terraform-docs/gh-actions@v1.0.0
+        uses: terraform-docs/gh-actions@f6d59f89a280fa0a3febf55ef68f146784b20ba0 # v1.0.0
         with:
           find-dir: "./terraform/${{ matrix.directory }}"
           output-file: USAGE.md
