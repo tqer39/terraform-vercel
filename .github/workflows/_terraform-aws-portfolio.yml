@@ -60,7 +60,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout source code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set Matrix
         id: set-matrix
@@ -80,7 +80,7 @@ jobs:
         directory: ${{ fromJson(needs.set-matrix.outputs.matrix )}}
     steps:
       - name: Checkout source code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: AWS Credential
         uses: ./.github/actions/aws-credential
@@ -130,7 +130,7 @@ jobs:
     if: contains(fromJSON('["pull_request"]'), github.event_name)
     steps:
       - name: Checkout source code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Check and delete comments
         run: |
